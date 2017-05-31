@@ -1,11 +1,7 @@
 package org.ramer.diary.controller.user;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpSession;
-
+import com.alibaba.fastjson.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 import org.ramer.diary.domain.Topic;
 import org.ramer.diary.domain.User;
 import org.ramer.diary.exception.UserNotExistException;
@@ -15,12 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.bind.annotation.*;
 
-import lombok.extern.slf4j.Slf4j;
+import javax.servlet.http.HttpSession;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 浏览他人主页或分享.
@@ -97,7 +93,7 @@ public class VisitOther{
             List<Integer> favourites = favouriteToList(user, other, session);
             //获取点赞信息
             List<Integer> praises = praiseToList(user, other, session);
-            log.debug("访问" + other.getName() + "的空间");
+            log.debug("访问" + other.getUsername() + "的空间");
             //写入关注信息
             session.setAttribute("isFollowed", isFollowed(user, other));
             //写入收藏信息
@@ -117,7 +113,7 @@ public class VisitOther{
      * @param session the session
      * @return 返回某个分享的详情页面
      */
-    @RequestMapping("/user/topic/{topic_id}")
+    @GetMapping("/user/topic/{topic_id}")
     public String forwardTopic(@PathVariable("topic_id") Integer topic_id, Map<String, Object> map,
             HttpSession session) {
         //    inOtherPage = false;
@@ -132,8 +128,7 @@ public class VisitOther{
             throw new UserNotExistException("您访问的页面已经乘坐2333···号灰船逃离这个星球了 -.-!");
         }
         User user = (User) session.getAttribute("user");
-        if (UserUtils.checkLogin(session)
-                && UserUtils.multiLogin(session, userService.getById(((User) session.getAttribute("user")).getId()))) {
+        if (UserUtils.checkLogin(session)) {
             log.debug("已登录,写入信息");
             //获取收藏信息
             List<Integer> favourites = favouriteToList(user, topic.getUser(), session);
@@ -159,8 +154,7 @@ public class VisitOther{
      * @return list中存储的是当前用户收藏的所有,当前被浏览用户,的分享的id.
      */
     public List<Integer> favouriteToList(User user, User other, HttpSession session) {
-        if (!UserUtils.checkLogin(session)
-                || !UserUtils.multiLogin(session, userService.getById(((User) session.getAttribute("user")).getId()))) {
+        if (!UserUtils.checkLogin(session)) {
             return new ArrayList<>();
         }
         List<Integer> list = favouriteService.getFavouriteTopicIds(user, other);
@@ -180,15 +174,11 @@ public class VisitOther{
      * @return list中存储的是当前用户点过赞的所有,当前被浏览用户,的分享的id.
      */
     public List<Integer> praiseToList(User user, User other, HttpSession session) {
-        if (!UserUtils.checkLogin(session)
-                || !UserUtils.multiLogin(session, userService.getById(((User) session.getAttribute("user")).getId()))) {
+        if (!UserUtils.checkLogin(session)) {
             return new ArrayList<>();
         }
         List<Integer> list = praiseService.getPraiseTopicIds(user, other);
-        log.debug("已点赞分享id : ");
-        for (Integer integer : list) {
-            log.debug("\t" + integer);
-        }
+        log.debug("已点赞分享id : {}", JSONObject.toJSONString(list));
         return list;
     }
 
